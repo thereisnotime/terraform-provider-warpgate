@@ -65,8 +65,7 @@ func New(version string) func() *schema.Provider {
 }
 
 type providerMeta struct {
-	client  *client.Client
-	version string
+	client *client.Client
 }
 
 // configure creates a configuration function for the Warpgate provider.
