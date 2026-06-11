@@ -172,7 +172,12 @@ $ terraform import warpgate_target.web_server 12345678-1234-1234-1234-1234567890
 - `http_options` (Block List, Max: 1) HTTP target options (see [below for nested schema](#nestedblock--http_options))
 - `mysql_options` (Block List, Max: 1) MySQL target options (see [below for nested schema](#nestedblock--mysql_options))
 - `postgres_options` (Block List, Max: 1) PostgreSQL target options (see [below for nested schema](#nestedblock--postgres_options))
+- `rate_limit_bytes_per_second` (Number) Limit transfer speed in bytes per second (0 = unlimited).
 - `ssh_options` (Block List, Max: 1) SSH target options (see [below for nested schema](#nestedblock--ssh_options))
+- `ticket_max_duration_seconds` (Number) Maximum ticket session duration in seconds (0 = unlimited).
+- `ticket_max_uses` (Number) Maximum number of times a ticket can be used (0 = unlimited).
+- `ticket_requests_disabled` (Boolean) Disable ticket requests for this target.
+- `ticket_require_approval` (Boolean) Require approval for ticket requests on this target.
 
 ### Read-Only
 
@@ -262,6 +267,7 @@ Required:
 Optional:
 
 - `allow_insecure_algos` (Boolean) Allow insecure SSH algorithms
+- `jump_host` (String) UUID of another Warpgate SSH target to use as a jump host.
 - `password_auth` (Block List, Max: 1) Password authentication for SSH (see [below for nested schema](#nestedblock--ssh_options--password_auth))
 - `public_key_auth` (Block List, Max: 1) Public key authentication for SSH (see [below for nested schema](#nestedblock--ssh_options--public_key_auth))
 
