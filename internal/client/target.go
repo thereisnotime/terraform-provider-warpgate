@@ -28,12 +28,17 @@ type TLS struct {
 
 // Target represents a Warpgate target
 type Target struct {
-	ID          string        `json:"id"`
-	Name        string        `json:"name"`
-	Description string        `json:"description,omitempty"`
-	GroupId     string        `json:"group_id,omitempty"`
-	AllowRoles  []string      `json:"allow_roles"`
-	Options     TargetOptions `json:"options"`
+	ID                      string        `json:"id"`
+	Name                    string        `json:"name"`
+	Description             string        `json:"description,omitempty"`
+	GroupId                 string        `json:"group_id,omitempty"`
+	AllowRoles              []string      `json:"allow_roles"`
+	Options                 TargetOptions `json:"options"`
+	RateLimitBytesPerSecond *int64        `json:"rate_limit_bytes_per_second,omitempty"`
+	TicketMaxDurationSeconds *int64       `json:"ticket_max_duration_seconds,omitempty"`
+	TicketRequestsDisabled  *bool         `json:"ticket_requests_disabled,omitempty"`
+	TicketRequireApproval   *bool         `json:"ticket_require_approval,omitempty"`
+	TicketMaxUses           *int64        `json:"ticket_max_uses,omitempty"`
 }
 
 // TargetOptions is a wrapper for the different target option types
@@ -61,6 +66,7 @@ type TargetSSHOptions struct {
 	Username           string        `json:"username"`
 	AllowInsecureAlgos bool          `json:"allow_insecure_algos,omitempty"`
 	Auth               SSHTargetAuth `json:"auth"`
+	JumpHost           string        `json:"jump_host,omitempty"` // Warpgate target UUID
 }
 
 // TargetHTTPOptions represents options for HTTP targets
@@ -94,10 +100,15 @@ type TargetPostgresOptions struct {
 
 // TargetDataRequest is the request payload for creating/updating a target
 type TargetDataRequest struct {
-	Name        string        `json:"name"`
-	Description string        `json:"description,omitempty"`
-	GroupId     string        `json:"group_id"`
-	Options     TargetOptions `json:"options"`
+	Name                    string        `json:"name"`
+	Description             string        `json:"description,omitempty"`
+	GroupId                 string        `json:"group_id"`
+	Options                 TargetOptions `json:"options"`
+	RateLimitBytesPerSecond *int64        `json:"rate_limit_bytes_per_second,omitempty"`
+	TicketMaxDurationSeconds *int64       `json:"ticket_max_duration_seconds,omitempty"`
+	TicketRequestsDisabled  *bool         `json:"ticket_requests_disabled,omitempty"`
+	TicketRequireApproval   *bool         `json:"ticket_require_approval,omitempty"`
+	TicketMaxUses           *int64        `json:"ticket_max_uses,omitempty"`
 }
 
 // GetTargets retrieves all targets from the Warpgate API, optionally filtered by

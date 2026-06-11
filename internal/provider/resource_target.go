@@ -47,6 +47,31 @@ func resourceTarget() *schema.Resource {
 				Optional:    true,
 				Description: "Which target group this target is assigned to",
 			},
+			"rate_limit_bytes_per_second": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Limit transfer speed in bytes per second (0 = unlimited).",
+			},
+			"ticket_max_duration_seconds": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Maximum ticket session duration in seconds (0 = unlimited).",
+			},
+			"ticket_requests_disabled": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Disable ticket requests for this target.",
+			},
+			"ticket_require_approval": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Require approval for ticket requests on this target.",
+			},
+			"ticket_max_uses": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "Maximum number of times a ticket can be used (0 = unlimited).",
+			},
 			// SSH Target Configuration
 			"ssh_options": {
 				Type:          schema.TypeList,
@@ -77,6 +102,11 @@ func resourceTarget() *schema.Resource {
 							Optional:    true,
 							Default:     false,
 							Description: "Allow insecure SSH algorithms",
+						},
+						"jump_host": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "UUID of another Warpgate SSH target to use as a jump host.",
 						},
 						"password_auth": {
 							Type:          schema.TypeList,
@@ -318,6 +348,7 @@ func resourceTargetCreate(ctx context.Context, d *schema.ResourceData, meta any)
 		Options:     targetOptions,
 		GroupId:     groupId,
 	}
+	applyTicketRateFields(d, req)
 
 	target, err := c.CreateTarget(ctx, req)
 	if err != nil {
@@ -366,6 +397,36 @@ func resourceTargetRead(ctx context.Context, d *schema.ResourceData, meta any) d
 		return diag.FromErr(fmt.Errorf("failed to set allow_roles: %w", err))
 	}
 
+	if target.RateLimitBytesPerSecond != nil {
+		if err := d.Set("rate_limit_bytes_per_second", int(*target.RateLimitBytesPerSecond)); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to set rate_limit_bytes_per_second: %w", err))
+		}
+	}
+
+	if target.TicketMaxDurationSeconds != nil {
+		if err := d.Set("ticket_max_duration_seconds", int(*target.TicketMaxDurationSeconds)); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to set ticket_max_duration_seconds: %w", err))
+		}
+	}
+
+	if target.TicketRequestsDisabled != nil {
+		if err := d.Set("ticket_requests_disabled", *target.TicketRequestsDisabled); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to set ticket_requests_disabled: %w", err))
+		}
+	}
+
+	if target.TicketRequireApproval != nil {
+		if err := d.Set("ticket_require_approval", *target.TicketRequireApproval); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to set ticket_require_approval: %w", err))
+		}
+	}
+
+	if target.TicketMaxUses != nil {
+		if err := d.Set("ticket_max_uses", int(*target.TicketMaxUses)); err != nil {
+			return diag.FromErr(fmt.Errorf("failed to set ticket_max_uses: %w", err))
+		}
+	}
+
 	// Set the appropriate options block based on target type
 	if err := setTargetOptions(d, target.Options); err != nil {
 		return diag.FromErr(fmt.Errorf("failed to set target options: %w", err))
@@ -397,6 +458,7 @@ func resourceTargetUpdate(ctx context.Context, d *schema.ResourceData, meta any)
 		Options:     targetOptions,
 		GroupId:     groupId,
 	}
+	applyTicketRateFields(d, req)
 
 	_, err = c.UpdateTarget(ctx, id, req)
 	if err != nil {
@@ -480,6 +542,8 @@ func buildSSHTargetOptions(opts map[string]any) (*client.TargetSSHOptions, error
 		return nil, fmt.Errorf("SSH target requires either password_auth or public_key_auth")
 	}
 
+	jumpHost, _ := opts["jump_host"].(string)
+
 	return &client.TargetSSHOptions{
 		Kind:               "Ssh",
 		Host:               host,
@@ -487,6 +551,7 @@ func buildSSHTargetOptions(opts map[string]any) (*client.TargetSSHOptions, error
 		Username:           username,
 		AllowInsecureAlgos: allowInsecureAlgos,
 		Auth:               auth,
+		JumpHost:           jumpHost,
 	}, nil
 }
 
@@ -629,6 +694,7 @@ func setTargetOptions(d *schema.ResourceData, options any) error {
 			"port":                 optionsMap["port"],
 			"username":             optionsMap["username"],
 			"allow_insecure_algos": optionsMap["allow_insecure_algos"],
+			"jump_host":            optionsMap["jump_host"],
 		}
 
 		// Handle auth block
@@ -753,6 +819,34 @@ func targetOptionsToMap(options any) (map[string]any, error) {
 	}
 
 	return result, nil
+}
+
+// applyTicketRateFields copies ticket and rate-limit fields from resource data into the request.
+func applyTicketRateFields(d *schema.ResourceData, req *client.TargetDataRequest) {
+	if v, ok := d.GetOk("rate_limit_bytes_per_second"); ok {
+		val := int64(v.(int))
+		req.RateLimitBytesPerSecond = &val
+	}
+
+	if v, ok := d.GetOk("ticket_max_duration_seconds"); ok {
+		val := int64(v.(int))
+		req.TicketMaxDurationSeconds = &val
+	}
+
+	if v, ok := d.GetOk("ticket_requests_disabled"); ok {
+		val := v.(bool)
+		req.TicketRequestsDisabled = &val
+	}
+
+	if v, ok := d.GetOk("ticket_require_approval"); ok {
+		val := v.(bool)
+		req.TicketRequireApproval = &val
+	}
+
+	if v, ok := d.GetOk("ticket_max_uses"); ok {
+		val := int64(v.(int))
+		req.TicketMaxUses = &val
+	}
 }
 
 // parseTLSConfig extracts TLS configuration from the Terraform schema representation.
